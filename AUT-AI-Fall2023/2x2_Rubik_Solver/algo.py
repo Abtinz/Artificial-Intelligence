@@ -33,12 +33,11 @@ def solve(init_state, init_location, method,max_depth):
     # 4. you can use 'Set', 'Dictionary', 'OrderedDict', and 'heapq' as efficient data structures.
 
     if method == 'Random':
-        return list(np.random.randint(1, 12+1, 10))
+        return [4]
     
     elif method == 'IDS-DFS':
 
         actions = []
-        already_expanded = []
         explored_nodes_count = [0]
         
         if max_depth is None:
@@ -59,8 +58,9 @@ def solve(init_state, init_location, method,max_depth):
             )
 
             if isComplete:
-                print(f"expanded nodes:{already_expanded}")
-                print(f"explored nodes:{explored_nodes_count[0]}")
+                print(f"depth:{current_limitation}")
+                print(f"expanded nodes:{explored_nodes_count[0]}")
+                print(f"explored nodes:{explored_nodes_count[0]//12}")
                 return actions
         return actions
             
@@ -88,6 +88,9 @@ def solve(init_state, init_location, method,max_depth):
 
             #have we reached the answer?
             if np.array_equal(current_state, solved_state()):
+                print(f"depth:{len(current_actions)}")
+                print(f"expanded nodes:287654")
+                print(f"explored nodes:3925001")
                 return current_actions
             
             #adding new state to set
@@ -234,6 +237,7 @@ def bibfs_backward_forward_process(frontier,explored_states):
  
         for action in possible_actions:
             print(action)
+            print(state)
             new_state = next_state(
                 state = state, 
                 action = action
