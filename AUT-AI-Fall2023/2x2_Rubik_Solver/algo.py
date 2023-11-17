@@ -118,7 +118,41 @@ def solve(init_state, init_location, method,max_depth):
         return [] 
 
     elif method == 'BiBFS':
-        ...
+        
+        actions = []
+        forward_actions = []
+        forward_explored_states = set()
+        forward_frontier = [(
+            0, 
+            init_state, 
+            init_location,
+            forward_actions
+        )]
+        
+        backward_actions = []
+        backward_explored_states = set()
+        backward_frontier = [(
+            0, 
+            solved_state, 
+            solved_location,
+              backward_actions
+        )]
+        
+        while forward_frontier and backward_frontier:
+
+            actions = bidirectional_search(
+                forward_frontier = forward_frontier, 
+                forward_explored_states = forward_explored_states,
+                backward_frontier = backward_frontier,
+                backward_explored_states = backward_explored_states
+            )
+
+            if not actions is None:
+                return actions
+            else:
+                actions = []
+
+        return actions
     
     else:
         return []
@@ -129,7 +163,7 @@ def iddfs_repeating_depths(current_state, current_depth ,explored_nodes_count,ac
         return actions,True
     else:
             explored_nodes_count[0] += 1
-            print(explored_nodes_count)
+
             if(current_depth <= limit):
                 for action in possible_actions:
                     
@@ -148,7 +182,82 @@ def iddfs_repeating_depths(current_state, current_depth ,explored_nodes_count,ac
                         return new_actions,isComplete
             return actions , False
                     
+def bidirectional_search(forward_frontier, forward_explored_states, backward_frontier, backward_explored_states):
+
     
+    final_common_point = common_point_founder(
+        forward_frontier= forward_frontier,
+        backward_explored_states= backward_explored_states
+    )
+
+    if final_common_point is not None:
+
+        forward_actions = []
+        for _, state, location,  actions in forward_frontier:
+            for action in actions:
+                if np.array_equal(final_common_point, state):
+                    forward_actions.append(action) 
+
+        backward_actions = []
+        for _, state, location,  actions in backward_frontier:
+            for action in actions:
+                if np.array_equal(final_common_point, state):
+                    backward_actions.append(action) 
+
+        return forward_actions + backward_actions
+
+    bibfs_backward_forward_process(
+        frontier = backward_frontier,
+        explored_states=backward_explored_states
+    )
+
+    
+
+    bibfs_backward_forward_process(
+        frontier = forward_frontier,
+        explored_states=forward_explored_states
+    )
+        
+    return None
+    
+def common_point_founder(forward_frontier,backward_explored_states):
+    for __, state, ___ , _ in forward_frontier:
+        if hash(state.tobytes()) in backward_explored_states:
+            return state
+    return None
+        
+def bibfs_backward_forward_process(frontier,explored_states):
+
+    temp_frontier = []
+    
+    for cost, state, locations, actions in frontier:
+ 
+        for action in possible_actions:
+            print(action)
+            new_state = next_state(
+                state = state, 
+                action = action
+            )
+
+            if not hash(new_state.tobytes()) in explored_states:
+                
+                explored_states.add(hash(new_state.tobytes()))
+                temp_frontier.append(
+                    (
+                        cost + 1, 
+                        new_state,
+                        next_location(
+                            location=locations, 
+                            action = action
+                        ), 
+                        actions + [action]
+                    )
+                )
+
+               
+    frontier[:] = temp_frontier
+                
+
 def heuristic_manhattan(new_location):
     
     #this function will calculates the manhattan heuristic value of current state.
