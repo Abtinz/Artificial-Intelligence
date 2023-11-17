@@ -70,33 +70,37 @@ def solve(init_state, init_location, method,max_depth):
     elif method == 'A*':
 
         actions = []
-        frontier = [(0, init_state, init_location, actions)]
+        #why set? because wee do not want to check repeated explored sets
         already_explored = set()
 
+        # Priority queue for A*
+        frontier = [(
+                0,#priority key and cost
+                init_state, #different states of graph will be saved here
+                init_location,#different states of graph will be saved here -> will be used for huristic function
+                actions
+            )
+        ]
+        
         while frontier:
-
             cost, current_state, current_location, current_actions = heapq.heappop(frontier)
-
             if np.array_equal(current_state, solved_state()):
                 return current_actions
             
             already_explored.add(hash(np.array(current_state).tobytes()))
 
             for action in possible_actions:
-
                 new_state = next_state(
-                    state = current_state, 
-                    action =action
+                    state=current_state, 
+                    action=action
                 )
-                
                 new_location = next_location(current_location, action)
-                new_cost = cost + heuristic_manhattan(
-                    new_location = new_location
-                )
+                new_cost = cost  + heuristic_manhattan(
+                    new_location=new_location
+                )  # cost of the action + heuristic cost
+                new_entry = (new_cost, new_state.tolist(), new_location.tolist(), current_actions + [action])
 
-                new_entry = (new_cost, new_state, new_location, current_actions + [action])
-                print(new_entry)
-                if any(hash(new_state.tobytes()) == hash_state for hash_state in already_explored):
+                if hash(new_state.tobytes()) not in already_explored:
                     heapq.heappush(frontier, new_entry)
 
         return [] 
@@ -138,4 +142,4 @@ def heuristic_manhattan(new_location):
     #this function will calculates the manhattan heuristic value of current state.
     #Arg:  new_location (numpy.array): Current location of the little cubes.
     #Returns: The manhattan heuristic value.
-    return np.sum(np.abs(new_location - solved_location)) // 4
+    return np.sum(np.abs(new_location - solved_location))
