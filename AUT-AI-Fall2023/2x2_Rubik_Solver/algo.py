@@ -1,3 +1,4 @@
+from collections import deque
 import heapq
 import numpy as np
 from state import next_state, solved_state
@@ -25,7 +26,6 @@ def solve(init_state, init_location, method,max_depth):
     current_location = init_location
     current_state = init_state
 
-
     # instructions and hints:
     # 1. use 'solved_state()' to obtain the goal state.
     # 2. use 'next_state()' to obtain the next state when taking an action .
@@ -33,11 +33,12 @@ def solve(init_state, init_location, method,max_depth):
     # 4. you can use 'Set', 'Dictionary', 'OrderedDict', and 'heapq' as efficient data structures.
 
     if method == 'Random':
-        return [4]
+        return list(np.random.randint(1, 12+1, 10))
     
     elif method == 'IDS-DFS':
 
         actions = []
+        already_expanded = []
         explored_nodes_count = [0]
         
         if max_depth is None:
@@ -63,9 +64,6 @@ def solve(init_state, init_location, method,max_depth):
                 print(f"explored nodes:{explored_nodes_count[0]//12}")
                 return actions
         return actions
-            
-
-        
     
     elif method == 'A*':
 
@@ -88,9 +86,6 @@ def solve(init_state, init_location, method,max_depth):
 
             #have we reached the answer?
             if np.array_equal(current_state, solved_state()):
-                print(f"depth:{len(current_actions)}")
-                print(f"expanded nodes:287654")
-                print(f"explored nodes:3925001")
                 return current_actions
             
             #adding new state to set
@@ -121,45 +116,28 @@ def solve(init_state, init_location, method,max_depth):
         return [] 
 
     elif method == 'BiBFS':
-        
-        actions = []
-        forward_actions = []
+        forward_queue = deque([(init_state, [])])
+        goal_queue = deque([(solved_state(), [])])
         forward_explored_states = set()
-        forward_frontier = [(
-            0, 
-            init_state, 
-            init_location,
-            forward_actions
-        )]
-        
-        backward_actions = []
         backward_explored_states = set()
-        backward_frontier = [(
-            0, 
-            solved_state, 
-            solved_location,
-              backward_actions
-        )]
-        
-        while forward_frontier and backward_frontier:
+        explored = 0
+        expanded = 0
 
-            actions = bidirectional_search(
-                forward_frontier = forward_frontier, 
-                forward_explored_states = forward_explored_states,
-                backward_frontier = backward_frontier,
-                backward_explored_states = backward_explored_states
+        while forward_queue and goal_queue:
+            actions,explored,expanded = bidirectional_search(
+                forward_queue = forward_queue, 
+                forward_explored_states= forward_explored_states,
+                goal_queue = goal_queue, 
+                backward_explored_states = backward_explored_states,
+                explored = explored, 
+                expanded = expanded
             )
 
             if not actions is None:
                 return actions
-            else:
-                actions = []
-
-        return actions
-    
-    else:
+            
         return []
-    
+
 def iddfs_repeating_depths(current_state, current_depth ,explored_nodes_count,actions,limit):
     
     if np.array_equal(current_state, solved_state()):
@@ -185,83 +163,53 @@ def iddfs_repeating_depths(current_state, current_depth ,explored_nodes_count,ac
                         return new_actions,isComplete
             return actions , False
                     
-def bidirectional_search(forward_frontier, forward_explored_states, backward_frontier, backward_explored_states):
+def bidirectional_search(forward_queue, forward_explored_states, goal_queue, backward_explored_states,explored , expanded):
 
     
-    final_common_point = common_point_founder(
-        forward_frontier= forward_frontier,
+    current_state, current_actions = forward_queue.popleft()
+    goal_state, goal_actions = goal_queue.popleft()
+
+    
+    reached_to_common_point = common_point_founder(  
+        current_state=current_state,
         backward_explored_states= backward_explored_states
     )
 
-    if final_common_point is not None:
+    if reached_to_common_point:
+                print("explored nodes:", explored)
+                print("expanded nodes:", expanded)
+                return current_actions + goal_actions[::-1], 0 , 0
 
-        forward_actions = []
-        for _, state, location,  actions in forward_frontier:
-            for action in actions:
-                if np.array_equal(final_common_point, state):
-                    forward_actions.append(action) 
-
-        backward_actions = []
-        for _, state, location,  actions in backward_frontier:
-            for action in actions:
-                if np.array_equal(final_common_point, state):
-                    backward_actions.append(action) 
-
-        return forward_actions + backward_actions
-
-    bibfs_backward_forward_process(
-        frontier = backward_frontier,
-        explored_states=backward_explored_states
-    )
-
-    
-
-    bibfs_backward_forward_process(
-        frontier = forward_frontier,
-        explored_states=forward_explored_states
-    )
+    explored += 1
+    for action in possible_actions:
+        expanded += 1
+        new_State = next_state(
+            state=current_state, 
+            action=action
+        )
+            
         
-    return None
+        if hash(new_State.tobytes()) not in forward_explored_states:
+            forward_queue.append((new_State, current_actions + [action]))
+            forward_explored_states.add(hash(new_State.tobytes()))
+
+        expanded += 1
+        new_goal_state = next_state(
+            state= goal_state, 
+            action= action
+        )
+
+        if  hash(new_goal_state.tobytes()) not in backward_explored_states:
+            goal_queue.append((new_goal_state, goal_actions + [action]))
+            backward_explored_states.add(hash(new_goal_state.tobytes()))
+    return None , explored , expanded
+       
+def common_point_founder(current_state,backward_explored_states):
+
+    if hash(current_state.tobytes()) in backward_explored_states:
+            return True
+    return False
     
-def common_point_founder(forward_frontier,backward_explored_states):
-    for __, state, ___ , _ in forward_frontier:
-        if hash(state.tobytes()) in backward_explored_states:
-            return state
-    return None
-        
-def bibfs_backward_forward_process(frontier,explored_states):
-
-    temp_frontier = []
-    
-    for cost, state, locations, actions in frontier:
- 
-        for action in possible_actions:
-            print(action)
-            print(state)
-            new_state = next_state(
-                state = state, 
-                action = action
-            )
-
-            if not hash(new_state.tobytes()) in explored_states:
-                
-                explored_states.add(hash(new_state.tobytes()))
-                temp_frontier.append(
-                    (
-                        cost + 1, 
-                        new_state,
-                        next_location(
-                            location=locations, 
-                            action = action
-                        ), 
-                        actions + [action]
-                    )
-                )
-
-               
-    frontier[:] = temp_frontier
-                
-
 def heuristic_manhattan(new_location):
     
     #this function will calculates the manhattan heuristic value of current state.
