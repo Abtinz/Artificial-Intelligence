@@ -83,26 +83,38 @@ def solve(init_state, init_location, method,max_depth):
         ]
         
         while frontier:
+        
             cost, current_state, current_location, current_actions = heapq.heappop(frontier)
+
+            #have we reached the answer?
             if np.array_equal(current_state, solved_state()):
                 return current_actions
             
+            #adding new state to set
             already_explored.add(hash(np.array(current_state).tobytes()))
 
             for action in possible_actions:
+                
+                #huristic calculation with new location based on this action
+                new_location = next_location(current_location, action)
+                new_cost = cost  + heuristic_manhattan(
+                    new_location=new_location
+                )  
+
+                # cost of the action + heuristic cost
                 new_state = next_state(
                     state=current_state, 
                     action=action
                 )
-                new_location = next_location(current_location, action)
-                new_cost = cost  + heuristic_manhattan(
-                    new_location=new_location
-                )  # cost of the action + heuristic cost
-                new_entry = (new_cost, new_state.tolist(), new_location.tolist(), current_actions + [action])
-
+                
+                #if we have this action and state on our set its an error to get it push without cost evaluation
                 if hash(new_state.tobytes()) not in already_explored:
-                    heapq.heappush(frontier, new_entry)
-
+                    heapq.heappush(
+                        frontier,
+                        (new_cost, new_state.tolist(), new_location.tolist(), current_actions + [action])
+                    )
+                else:
+                    pass
         return [] 
 
     elif method == 'BiBFS':
