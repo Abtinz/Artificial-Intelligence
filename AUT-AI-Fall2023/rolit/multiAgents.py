@@ -98,7 +98,11 @@ class MinimaxAgent(MultiAgentSearchAgent):
         self.evaluationFunction(gameState) -> float
         """
 
-        action , max_val = self.max_value(state, 0, 0)
+        action , max_val = self.max_value(
+            gameState=state, 
+            depth=0, 
+            agent_index=0
+        )
         print(action, max_val)
         return action
 
@@ -259,6 +263,68 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         return action, maximum
 
     
+class ExpectimaxAgent(MultiAgentSearchAgent):
+    """
+      Your expectimax agent which has a max node for your agent but every other node is a chance node.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+    def getAction(self, gameState):
+        """
+        Returns the expectimax action using self.depth and self.evaluationFunction
+
+        All opponents should be modeled as choosing uniformly at random from their
+        legal moves.
+        """
+        action , value = self.max_value(
+            gameState=gameState, 
+            depth=0, 
+            agent_index=0
+        )
+        print(action, value)
+        return action
+
+    def average_value(self, gameState, depth, agent_index):
+        if gameState.isGameFinished or self.depth == depth:
+            return self.evaluationFunction(gameState)
+        expected_sum = 0
+        for current_action in gameState.getLegalActions(agent_index):
+            next_action = gameState.generateSuccessor(agent_index, current_action)
+            if (agent_index + 1) % gameState.getNumAgents() == 0:
+                action, value = self.max_value(gameState=next_action,
+                  depth= depth + 1, 
+                  agent_index= 0
+            )
+            else:
+                value = self.average_value(gameState=next_action,
+                  depth= depth + 1, 
+                  agent_index= (agent_index + 1) % gameState.getNumAgents()
+            )
+            
+
+            expected_sum += value
+        
+        return expected_sum / len(gameState.getLegalActions(agent_index))
+
+    def max_value(self, gameState, depth, agent_index):
+        
+        if depth == self.depth or gameState.isGameFinished():
+            return None, self.evaluationFunction(gameState)
+        maximum = -1e14
+        action = None
+        for current_action in gameState.getLegalActions(agent_index):
+            next_state = gameState.generateSuccessor(agent_index, current_action)
+            value = self.average_value(
+                gameState=next_state, 
+                depth=depth, 
+                agent_index=agent_index + 1
+            )
+            if value > maximum:
+                maximum = value
+                action = current_action
+        return action, maximum
 
         
 
