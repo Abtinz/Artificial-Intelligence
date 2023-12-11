@@ -348,18 +348,75 @@ def betterEvaluationFunction(currentGameState):
     gameState.getScore(index) -> int
 
     """
+
+    total_coin_value = 0
+    maxCurrentPoints = 0
+    minCurrentPoints = 1e14
+
+    for number in currentGameState.getScore():
+        if number < minCurrentPoints:
+            minCurrentPoints = number
+        if number > maxCurrentPoints :
+           maxCurrentPoints = number 
+
+    CoinParityHeuristicValue =  (maxCurrentPoints - minCurrentPoints)/(maxCurrentPoints + minCurrentPoints)
+    CornerHeuristicValue = cornersHeuristic(currentGameState)
     
-    "*** YOUR CODE HERE ***"
+    MobilityHeuristicValue = mobilityHeuristic(currentGameState)
+    StabilityHeuristicValue = staticHeuristic(currentGameState)
 
-    # parity
-
-    # corners
-
-    # mobility
-
-    # stability
+    evaluationValue = CoinParityHeuristicValue + CornerHeuristicValue + MobilityHeuristicValue + StabilityHeuristicValue
     
-    util.raiseNotDefined()
+    return evaluationValue * 100
+    
+    
+
+def cornersHeuristic(currentGameState):
+    corners_owners_count = [ 0 for player in range(currentGameState.getNumAgents())]
+    for corner in currentGameState.getCorners():
+        if corner != -1:
+            corners_owners_count[corner] += 1
+    minimum_value = min(corners_owners_count)
+    maximum_value = max(corners_owners_count)
+    if minimum_value + maximum_value != 0 :
+        return (maximum_value - minimum_value ) / (maximum_value + minimum_value )
+    else :
+        return 0
+    
+def staticHeuristic(currentGameState):
+    minimum_value = 0
+    maximum_value =  1e14
+    for player in range(currentGameState.getNumAgents()):
+        player_moves = 0
+        for action in currentGameState.getLegalActions(player):
+            if not currentGameState.placePiece(player, action) is None:
+                player_moves += 1
+                
+        if player_moves > maximum_value : maximum_value = player_moves
+        if player_moves < minimum_value : minimum_value = player_moves 
+    
+    if minimum_value + maximum_value != 0 :
+        return (maximum_value - minimum_value ) / (maximum_value + minimum_value )
+    else :
+        return 0
+
+
+def mobilityHeuristic(currentGameState):
+    player_counts = currentGameState.getNumAgents()
+   
+    maximum_potential_len = 0
+    minimum_potential_len= 1e14
+    for index in range(player_counts):
+        
+        current_potential_moves = len(currentGameState.getPossibleActions(index))
+        if current_potential_moves > maximum_potential_len :maximum_potential_len = current_potential_moves
+        if current_potential_moves < minimum_potential_len :minimum_potential_len = current_potential_moves 
+    
+    if minimum_potential_len + maximum_potential_len != 0 :
+        return (maximum_potential_len - minimum_potential_len ) / (maximum_potential_len + minimum_potential_len )
+    else :
+        return 0
+
 
 # Abbreviation
 better = betterEvaluationFunction
