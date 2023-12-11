@@ -99,7 +99,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
         """
 
         action , max_val = self.max_value(state, 0, 0)
-        print(action)
+        print(action, max_val)
         return action
 
     def min_value(self, gameState, depth, agent_index):
@@ -164,13 +164,9 @@ class MinimaxAgent(MultiAgentSearchAgent):
             
         return action, maximum_val
     
-
-
-        
-
-class ExpectimaxAgent(MultiAgentSearchAgent):
+class AlphaBetaAgent(MultiAgentSearchAgent):
     """
-      Your expectimax agent which has a max node for your agent but every other node is a chance node.
+    Your minimax agent with alpha-beta pruning. It is very similar to the MinimaxAgent but you need to implement the alpha-beta pruning algorithm too.
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -178,13 +174,94 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
 
     def getAction(self, gameState):
         """
-        Returns the expectimax action using self.depth and self.evaluationFunction
-
-        All opponents should be modeled as choosing uniformly at random from their
-        legal moves.
+        Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        action , max_val = self.max_value(
+            gameState =gameState, 
+            depth=0, 
+            agent_index=0, 
+            alpha=-1e14, 
+            beta=1e14
+        )
+        print(action, max_val)
+        return action
+        
+    def min_value(self, gameState, depth, agent_index, alpha, beta):
+        
+        if gameState.isGameFinished() or depth == self.depth:
+            return None, self.evaluationFunction(gameState)
+
+        minimum = 1e14
+        action = None
+        for current_action in gameState.getLegalActions(agent_index):
+            
+            next_state = gameState.generateSuccessor(agent_index, current_action)
+            current_index = (agent_index + 1) % gameState.getNumAgents()
+            
+            if current_index == 0:
+                next_action, value = self.max_value(
+                    gameState=next_state, 
+                    depth=depth, 
+                    agent_index=current_index, 
+                    alpha= alpha, 
+                    beta =beta
+                )
+
+            else:
+                next_action, value = self.max_value(
+                    gameState=next_state, 
+                    depth=depth, 
+                    agent_index=current_index + 1, 
+                    alpha= alpha, 
+                    beta =beta
+                )
+            
+
+            if value < minimum:
+                minimum = value
+                action = minimum
+
+            if minimum < alpha:
+                return action, minimum
+
+            if minimum < beta:
+                beta = minimum
+
+        return action, minimum
+    
+    def max_value(self, gameState, depth, agent_index, alpha, beta):
+        
+        if gameState.isGameFinished() or depth == self.depth:
+            return None, self.evaluationFunction(gameState)
+
+        maximum = -1e14
+        action = None
+        for current_action in gameState.getLegalActions(agent_index):
+            next_state = gameState.generateSuccessor(agent_index, current_action)
+            next_action, value = self.min_value(
+                gameState= next_state,
+                depth= depth + 1,
+                agent_index= agent_index + 1,
+                alpha= alpha, 
+                beta=beta
+            )
+
+            if value > maximum:
+                action = current_action
+                maximum = value
+
+            if maximum > beta:
+                return action, maximum
+
+            if maximum > alpha:
+                alpha = maximum
+
+        return action, maximum
+
+    
+
+        
+
 
 
 def betterEvaluationFunction(currentGameState):
